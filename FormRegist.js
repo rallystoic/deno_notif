@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Text, View, TextInput, Button, Alert, StyleSheet } from "react-native";
+import { Text, View, TextInput, Button, Alert, StyleSheet,SafeAreaView, ScrollView } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import SQLite  from 'react-native-sqlite-storage';
-import GetData from "./getData";
 
 const db = SQLite.openDatabase(
     {
@@ -25,9 +24,16 @@ export default function FormRegist() {
       const [date_, setDate_] = useState(new Date())
 
       const [mode, setMode] = useState('date');
+      const [DbData, setDbData] = useState([]);
+        let _datas = [];
 
       const { control, handleSubmit, formState: { errors } } = useForm();
     const [show, setShow] = useState(false);
+    useEffect( () => {
+        createTable();
+        setTimeout(GetDatas, 1000);
+        //InsertData();
+    },[]);
 
     const createTable = () => {
         db.transaction((tx) => {
@@ -38,28 +44,95 @@ export default function FormRegist() {
             );
         })
     };
+    const DeleteSubject = id => {
+console.log(id);
+        setDbData([]);
+        db.transaction( (tx) => {
+        tx.executeSql(
+            `DELETE FROM subject WHERE id = ${id}`
+        );
+        }, () => {
+            //console.log("____deleted");
+        },error => {
+            console.log(error);
+        });
+        GetDatas();
+    }
+const ServiceComponent = () => {
+        const list = DbData.map((item, index) => {
+            return (
+                <View key={index.toString()} style={{ borderWidth: 1 }}>
+                    <Text> วิชา: {item.name}</Text>
+                    <Text> รานละเอียด: {item.description}</Text>
+                    <Text> กำหนดส่ง: {item.date_delivery}</Text>
+                <Button title="ลบ" color="#FF0000" onPress={() => DeleteSubject(item.id)} />
+                </View>
+            );
+        });
 
-    const InsertData = () => {
+        return list;
+    }
+    const GetDatas = () => {
+        db.transaction((tx) => {
+            tx.executeSql(
+               "SELECT id, name, description, date_delivery from subject",
+                [],
+                (tx, results) => {
+
+                var len = results.rows.length;    
+                    if (len > 0) {
+
+                        for (var i = 0; i < len; i++) {
+                        let data = {
+                            id: 0,
+                            name: '',
+                            description: '',
+                            date_delivery: '',
+                        }
+                            data.id  = results.rows.item(i).id;
+                            data.name  = results.rows.item(i).name;
+                            data.description  = results.rows.item(i).description;
+                            data.date_delivery  = results.rows.item(i).date_delivery;
+                            _datas.push(data);
+                        }
+                        setDbData(_datas);
+                        //console.log(_datas);
+                    }
+                }
+            );
+        })
+    };
+
+    const InsertData = (_prop) => {
         db.transaction( (tx) => {
             tx.executeSql(
-                "INSERT INTO subject (name,date_delivery) values('math', '2021/08/15 18:00:00')"
+                `INSERT INTO subject (name, description, date_delivery) values('${_prop.name}', '${_prop.description}', '${_prop.date_delivery}')`
             );
+        },() => {
+            console.log("success");
+        },error => {
+            console.log(error);
         });
     }
 
-    useEffect( () => {
-        createTable();
-        //InsertData();
-    },[]);
 
       const onSubmit = data => { console.log(data)
-          var lll = moment(date_);
+          let lll = moment(date_);
           // time format to be registered
           //console.log(lll.format("YYYY-MM-DD HH:mm"));
           let result = lll.format("YYYY/MM/DD HH:mm:ss");
-          console.warn(result);
-          let  test_ = new Date(result);
-          console.log(test_.toString());
+          console.log(result);
+          let _dataprop = {
+              name : data.name,
+              description : data.description,
+              date_delivery : result
+          };
+          InsertData(_dataprop);
+         // console.log(_dataprop);
+         // //console.warn(result);
+         // let  test_ = new Date(result);
+         // console.log(test_.toString());
+          GetDatas();
       };
 
       const onchange = (event, selectedDate) => {
@@ -102,6 +175,7 @@ export default function FormRegist() {
                   control={control}
                   rules={{
                                required: true,
+                      maxLength: 50
                                   }}
                   render={({ field: { onChange, onBlur, value } }) => (
                                 <TextInput
@@ -111,17 +185,18 @@ export default function FormRegist() {
                                   value={value}
                                 />
                               )}
-                  name="subject"
+                  name="name"
                   defaultValue=""
                 />
-                {errors.subject && <Text>This is required.</Text>}
+                {errors.name && <Text>This is required.</Text>}
 
 
           <Text>รายละเอียด</Text>
                 <Controller
                   control={control}
                   rules={{
-                      maxLength: 255,
+                               required: true,
+                      maxLength: 255
                                   }}
                   render={({ field: { onChange, onBlur, value } }) => (
                                 <TextInput
@@ -136,6 +211,7 @@ export default function FormRegist() {
                   name="description"
                   defaultValue=""
                 />
+                {errors.name && <Text>This is required.</Text>}
           <View>
           <Text>วันและเวลากำหนดส่ง</Text>
                   <Button style={styles.button} onPress={showDatepicker} title="date picker!" />
@@ -160,7 +236,13 @@ export default function FormRegist() {
                           )}
           <Text>{"\n"}</Text>
 
-          <GetData />
+        <Text> รายงาน แจ้งเตือนการส่งงาน</Text>
+        <SafeAreaView>
+        <ScrollView>
+        <ServiceComponent />
+        </ScrollView>
+        </SafeAreaView>
+
               </View>
             );
 }

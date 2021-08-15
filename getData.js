@@ -19,6 +19,9 @@ const db = SQLite.openDatabase(
     }
 
 );
+    export const triggersome = () => {
+        this.GetDatas();
+    }
 
 
 export default function GetData() {
@@ -29,10 +32,31 @@ export default function GetData() {
                 //+"(id INTEGER PRIMARY KEY AUTOINCREMENT, name  TEXT, description   TEXT, date_created  TEXT, date_delivery TEXT, is_send  INTEGER);"
 
     useEffect( () => {
-        setTimeout(GetDatas, 3000);
+        setTimeout(GetDatas, 1000);
         //GetDatas();
         
-    },[]);
+    }, []);
+
+    const DeleteSubject = id => {
+console.log(id);
+        db.transaction( (tx) => {
+        tx.executeSql(
+            `DELETE FROM subject WHERE id = ${id}`
+        );
+        }, () => {
+            //console.log("____deleted");
+        },error => {
+            console.log(error);
+        });
+        GetDatas();
+    }
+
+    const styles = StyleSheet.create({
+        fixToText: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+        }
+    });
 
 const ServiceComponent = () => {
         const list = DbData.map((item, index) => {
@@ -41,6 +65,7 @@ const ServiceComponent = () => {
                     <Text> วิชา: {item.name}</Text>
                     <Text> รานละเอียด: {item.description}</Text>
                     <Text> กำหนดส่ง: {item.date_delivery}</Text>
+                <Button title="ลบ" color="#FF0000" onPress={() => DeleteSubject(item.id)} />
                 </View>
             );
         });
@@ -72,7 +97,7 @@ const ServiceComponent = () => {
                             _datas.push(data);
                         }
                         setDbData(_datas);
-                        console.log(_datas);
+                        //console.log(_datas);
                     }
                 }
             );

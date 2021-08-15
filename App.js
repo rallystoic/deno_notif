@@ -28,6 +28,7 @@ import {
 
 import PushNotification from "react-native-push-notification";
 import FormRegist from "./FormRegist";
+import { GetDataAll,  IsNotifable }  from "./HandleNotice";
 
 const App  = () => {
     const _channelId = "test_channel" ;
@@ -51,15 +52,21 @@ const App  = () => {
 
     useEffect( ()=> {
         createChannel();
+        //testTime();
+        //console.log(IsNotifable('2021/08/15 21:57:00'));
+        //GetDataAll();
+        setInterval(GetDataAll, 30000);
     },[]);
 
     return(
         <SafeAreaView>
+        <ScrollView>
         <View style={styles.sectionContainer}>
         <Text>App แจ้งเตือนส่งงาน</Text>
           <Text>{"\n"}</Text>
         <FormRegist />
         </View>
+        </ScrollView>
         
         </SafeAreaView>
     )
